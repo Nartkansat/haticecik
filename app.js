@@ -104,22 +104,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "r" || e.key === "R") jumpTo(0.0);
   });
 
-  // Start Experience
-  btnStart.addEventListener("click", () => {
+  // Start Experience (Optimized for instantaneous Mobile touch unlocking)
+  function handleStart(e) {
+    if (isRunning) return;
+
+    // 1. Immediately start & unlock all audio channels within the synchronous user gesture!
+    audioManager.start();
+
+    // 2. Hide intro modal
     introModal.classList.add("hidden");
     tracker.send("baslat_tiklandi", { details: "Kullanici deneyimi baslatti" });
 
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
+    // 3. Optional fullscreen
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch (err) {}
 
     isRunning = true;
     startTime = performance.now();
     lastTime = startTime;
-    audioManager.start();
-
     requestAnimationFrame(tick);
-  });
+  }
+
+  btnStart.addEventListener("click", handleStart);
+  btnStart.addEventListener("touchend", handleStart);
 
   // Replay
   btnReplay.addEventListener("click", () => {
