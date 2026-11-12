@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>✨</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      touch-action: none;
+      background-color: #010204;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* Live Canvas Stage */
+    #stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: #010204;
+      z-index: 2;
+    }
+
+    /* Minimal floating controls with mobile safe-area support */
+    .controls {
+      position: absolute;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      right: max(20px, env(safe-area-inset-right, 20px));
+      display: flex;
+      gap: 12px;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    body:hover .controls, .controls.touch-visible {
+      opacity: 0.8;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: scale(1.08);
+    }
+
+    /* Minimal Intro Modal */
+    .intro-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #010204;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 1.2s;
+    }
+
+    .intro-modal.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .heart-icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 28px;
+      animation: heartbeat 2.2s infinite ease-in-out;
+      filter: drop-shadow(0 0 20px rgba(255, 60, 130, 0.7));
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.15); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.12); }
+      70% { transform: scale(1); }
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, #e94584 0%, #892978 100%);
+      border: none;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      padding: 14px 44px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(233, 69, 132, 0.45);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 12px 35px rgba(233, 69, 132, 0.65);
+    }
+
+    /* Subtle replay pill on end */
+    .replay-pill {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #ffffff;
+      padding: 10px 24px;
+      border-radius: 25px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .replay-pill.visible {
+      opacity: 0.85;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .replay-pill:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 100% Live Canvas -->
+  <canvas id="stage"></canvas>
+
+  <!-- Controls -->
+  <div class="controls" id="controls">
+    <button class="btn-icon" id="btn-audio" title="Sesi Aç/Kapat">
+      <svg id="icon-sound-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <svg id="icon-sound-off" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <line x1="23" y1="9" x2="17" y2="15"></line>
+        <line x1="17" y1="9" x2="23" y2="15"></line>
+      </svg>
+    </button>
+    <button class="btn-icon" id="btn-fullscreen" title="Tam Ekran">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Replay Button (Appears only after sequence finishes) -->
+  <button class="replay-pill" id="btn-replay">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="1 4 1 10 7 10"></polyline>
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+    </svg>
+    <span>Tekrar Başlat</span>
+  </button>
+
+  <!-- Intro Screen Modal -->
+  <div class="intro-modal" id="intro-modal">
+    <svg class="heart-icon" viewBox="0 0 24 24" fill="#ff4b8b">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+    </svg>
+    <button class="start-btn" id="btn-start">
+      <span>Başlat</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Preloaded Audio for First Part (ilkısım.mp3) -->
+  <audio id="audio-first-part" preload="auto" playsinline>
+    <source src="ses/ilkkisim.mp3" type="audio/mpeg">
+    <source src="ilkkisim.mp3" type="audio/mpeg">
+    <source src="ses/ilk%C4%B1s%C4%B1m.mp3" type="audio/mpeg">
+    <source src="part1.mp3" type="audio/mpeg">
+    <source src="audio.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Preloaded Audio for Second Part / I LOVE YOU (ikincikısım.mp3) -->
+  <audio id="audio-second-part" preload="auto" playsinline>
+    <source src="ses/ikincikisim.mp3" type="audio/mpeg">
+    <source src="ikincikisim.mp3" type="audio/mpeg">
+    <source src="ses/ikincik%C4%B1s%C4%B1m.mp3" type="audio/mpeg">
+    <source src="part2.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Modular Pure Live JavaScript Scripts -->
+  <script src="pako.min.js"></script>
+  <script src="tracker.js?v=1"></script>
+  <script src="scene_eye.js?v=4"></script>
+  <script src="scene_flower.js?v=4"></script>
+  <script src="scene_bouquet.js?v=4"></script>
+  <script src="audio.js?v=4"></script>
+  <script src="app.js?v=5"></script>
+</body>
+</html>
