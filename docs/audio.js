@@ -36,10 +36,10 @@ class AudioManager {
     // Cue timeline definitions
     this.cues = [
       { name: "A_1", audio: this.audioA1, time: 0.0,  dur: 27.9, played: false },
-      { name: "A_2", audio: this.audioA2, time: 41.0, dur: 5.5,  played: false }, // Flower 8s (33 + 8)
-      { name: "A_3", audio: this.audioA3, time: 47.0, dur: 3.8,  played: false }, // Flower 14s (33 + 14)
-      { name: "A_4", audio: this.audioA4, time: 55.0, dur: 4.2,  played: false }, // Flower 22s (33 + 22)
-      { name: "A_5", audio: this.audioA5, time: 68.0, dur: 18.5, played: false }, // Lilyum 5s (63 + 5)
+      { name: "A_2", audio: this.audioA2, time: 37.0, dur: 5.5,  played: false },
+      { name: "A_3", audio: this.audioA3, time: 44.0, dur: 3.8,  played: false },
+      { name: "A_4", audio: this.audioA4, time: 52.0, dur: 4.2,  played: false },
+      { name: "A_5", audio: this.audioA5, time: 68.0, dur: 18.5, played: false },
     ];
   }
 
