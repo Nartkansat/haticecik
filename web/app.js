@@ -71,24 +71,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (t < 63.0) {
       // Phase 2: Live Pointillism Flower (33s - 63s)
       tracker.logPhase("Faz 2: Canli Cicek Sahnesi");
-      if (audioManager.firstPartAudio && !audioManager.firstPartAudio.paused) {
-        audioManager.firstPartAudio.pause();
-      }
-      if (!audioManager.pianoStarted) {
-        audioManager.startPiano();
-      }
       // 1.6x speed matches the 48-second simulation to 30 real seconds
       const t_fl = (t - 33.0) * 1.6;
       flowerScene.render(t_fl);
     } else {
       // Phase 3: Bouquet Live ASCII -> Real Photo (63s+)
       tracker.logPhase("Faz 3: Buket Fotografi Sahnesi");
-      if (audioManager.firstPartAudio && !audioManager.firstPartAudio.paused) {
-        audioManager.firstPartAudio.pause();
-      }
-      if (!audioManager.pianoStarted) {
-        audioManager.startPiano();
-      }
       const t_bq = t - 63.0;
       bouquetScene.render(t_bq);
 
