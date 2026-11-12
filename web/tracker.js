@@ -92,3 +92,4 @@ class Tracker {
 }
 
 window.Tracker = Tracker;
+
