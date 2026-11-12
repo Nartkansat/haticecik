@@ -80,7 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const t_bq = t - 63.0;
       bouquetScene.render(t_bq);
 
-      if (t_bq >= 8.5) {
+      // A_5 finishes around 68.0s + 18.5s = 86.5s -> show replay button after A_5 completes (t_bq >= 24.0s)
+      if (t_bq >= 24.0) {
         btnReplay.classList.add("visible");
       }
     }

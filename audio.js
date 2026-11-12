@@ -1,5 +1,12 @@
 /**
- * Web Audio Engine: Direct Soundtrack (fulldeneme.mp3) + Soft Ambient Romantic Piano
+ * Web Audio Engine: Precision Multi-Cue Voiceover Player (A_1 to A_5) + Soft Ambient Piano
+ *
+ * Cues:
+ * - A_1: t = 0.0s (Directly at the start)
+ * - A_2: t = 41.0s (Flower scene at 8s)
+ * - A_3: t = 47.0s (Flower scene at 14s)
+ * - A_4: t = 55.0s (Flower scene at 22s)
+ * - A_5: t = 68.0s (Lilyum / Bouquet scene at 5s)
  */
 class AudioManager {
   constructor() {
@@ -9,11 +16,31 @@ class AudioManager {
     this.isMuted = false;
     this.timer = null;
 
-    // Direct preloaded HTML audio element
-    this.audio = document.getElementById("bg-audio");
-    if (!this.audio) {
-      this.audio = new Audio("fulldeneme.mp3");
-    }
+    // Get preloaded HTML audio elements (with fallback)
+    const getAudio = (id, fallbackSrc) => {
+      let el = document.getElementById(id);
+      if (!el) {
+        el = new Audio(fallbackSrc);
+      }
+      return el;
+    };
+
+    this.audioA1 = getAudio("audio-a1", "A_1.mp3");
+    this.audioA2 = getAudio("audio-a2", "A_2.mp3");
+    this.audioA3 = getAudio("audio-a3", "A_3.mp3");
+    this.audioA4 = getAudio("audio-a4", "A_4.mp3");
+    this.audioA5 = getAudio("audio-a5", "A_5.mp3");
+
+    this.allClips = [this.audioA1, this.audioA2, this.audioA3, this.audioA4, this.audioA5];
+
+    // Cue timeline definitions
+    this.cues = [
+      { name: "A_1", audio: this.audioA1, time: 0.0,  dur: 27.9, played: false },
+      { name: "A_2", audio: this.audioA2, time: 41.0, dur: 5.5,  played: false }, // Flower 8s (33 + 8)
+      { name: "A_3", audio: this.audioA3, time: 47.0, dur: 3.8,  played: false }, // Flower 14s (33 + 14)
+      { name: "A_4", audio: this.audioA4, time: 55.0, dur: 4.2,  played: false }, // Flower 22s (33 + 22)
+      { name: "A_5", audio: this.audioA5, time: 68.0, dur: 18.5, played: false }, // Lilyum 5s (63 + 5)
+    ];
   }
 
   init() {
@@ -21,8 +48,8 @@ class AudioManager {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     this.ctx = new AudioCtx();
     this.gainNode = this.ctx.createGain();
-    // Soft ambient volume (0.12) so it never overpowers the main audio file
-    this.gainNode.gain.setValueAtTime(0.12, this.ctx.currentTime);
+    // Soft, warm background volume (0.10) so it never overpowers the voiceovers
+    this.gainNode.gain.setValueAtTime(0.10, this.ctx.currentTime);
     this.gainNode.connect(this.ctx.destination);
   }
 
@@ -34,9 +61,8 @@ class AudioManager {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, time);
 
-    // Soft, gentle sine envelope
     noteGain.gain.setValueAtTime(0.001, time);
-    noteGain.gain.exponentialRampToValueAtTime(0.18, time + 0.08);
+    noteGain.gain.exponentialRampToValueAtTime(0.16, time + 0.08);
     noteGain.gain.exponentialRampToValueAtTime(0.001, time + dur);
 
     osc.connect(noteGain);
@@ -70,6 +96,17 @@ class AudioManager {
     loop();
   }
 
+  playClip(audioEl, offset = 0) {
+    if (!audioEl) return;
+    audioEl.currentTime = offset;
+    audioEl.muted = this.isMuted;
+    audioEl.volume = 1.0;
+    const p = audioEl.play();
+    if (p !== undefined) {
+      p.catch(err => console.warn("[AudioManager] Clip play:", err));
+    }
+  }
+
   start() {
     this.init();
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -77,54 +114,78 @@ class AudioManager {
     }
     this.isPlaying = true;
 
-    // 1. Play main soundtrack (fulldeneme.mp3) at full clarity (1.0 volume)
-    if (this.audio) {
-      this.audio.currentTime = 0;
-      this.audio.muted = this.isMuted;
-      this.audio.volume = 1.0;
-      this.audio.play().catch((err) => {
-        console.warn("[AudioManager] Play prevented:", err);
-      });
-    }
+    // Reset all cue played flags
+    this.cues.forEach(c => c.played = false);
 
-    // 2. Start soft, non-intrusive ambient piano in the background
+    // 1. Immediately trigger A_1 for the start
+    this.cues[0].played = true;
+    this.playClip(this.audioA1, 0);
+
+    // 2. Start gentle, warm ambient background piano
     this.startPiano();
   }
 
-  seek(seconds) {
-    if (this.audio) {
-      const dur = this.audio.duration;
-      if (dur && !isNaN(dur)) {
-        this.audio.currentTime = Math.min(seconds, dur);
-      } else {
-        this.audio.currentTime = seconds;
-      }
-      if (this.isPlaying && this.audio.paused) {
-        this.audio.play().catch(() => {});
+  updateTime(t) {
+    if (!this.isPlaying) return;
+
+    // Check each cue to trigger precisely at its appointed second
+    for (let i = 0; i < this.cues.length; i++) {
+      const cue = this.cues[i];
+      if (t >= cue.time && !cue.played && t < cue.time + cue.dur) {
+        cue.played = true;
+        console.log(`[AudioManager] Triggering ${cue.name} at ${t.toFixed(1)}s`);
+        this.playClip(cue.audio, t - cue.time);
       }
     }
   }
 
-  updateTime(t) {
-    // Both play in harmony throughout the experience
+  seek(seconds) {
+    if (!this.isPlaying) return;
+
+    for (let i = 0; i < this.cues.length; i++) {
+      const cue = this.cues[i];
+      const cueEnd = cue.time + cue.dur;
+
+      if (seconds >= cue.time && seconds < cueEnd) {
+        // Currently inside this cue
+        cue.played = true;
+        this.playClip(cue.audio, seconds - cue.time);
+      } else {
+        // Outside this cue
+        if (cue.audio && !cue.audio.paused) {
+          cue.audio.pause();
+          cue.audio.currentTime = 0;
+        }
+        cue.played = (seconds >= cueEnd);
+      }
+    }
   }
 
   toggleMute() {
     this.isMuted = !this.isMuted;
-    if (this.audio) {
-      this.audio.muted = this.isMuted;
-    }
+    this.allClips.forEach(clip => {
+      if (clip) clip.muted = this.isMuted;
+    });
     if (this.gainNode && this.ctx) {
-      this.gainNode.gain.setValueAtTime(this.isMuted ? 0 : 0.12, this.ctx.currentTime);
+      this.gainNode.gain.setValueAtTime(this.isMuted ? 0 : 0.10, this.ctx.currentTime);
     }
     return this.isMuted;
   }
 
   reset() {
+    // Pause all clips
+    this.allClips.forEach(clip => {
+      if (clip) {
+        clip.pause();
+        clip.currentTime = 0;
+      }
+    });
+
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
+
     this.start();
   }
 }
